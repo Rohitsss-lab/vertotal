@@ -13,14 +13,22 @@ def bump(version, bump_type):
         patch += 1
     return f"{major}.{minor}.{patch}"
 
-repo_name    = os.environ.get("REPO_NAME", "").strip()
-repo_version = os.environ.get("REPO_VERSION", "").strip()
-bump_type    = os.environ.get("BUMP_TYPE", "patch").strip()
+# Try multiple ways to get the values
+repo_name    = (os.environ.get("REPO_NAME")    or 
+                os.environ.get("repo_name")    or "").strip()
+repo_version = (os.environ.get("REPO_VERSION") or 
+                os.environ.get("repo_version") or "").strip()
+bump_type    = (os.environ.get("BUMP_TYPE")    or 
+                os.environ.get("bump_type")    or "patch").strip()
 
 print(f"==========================================")
 print(f"REPO_NAME    = '{repo_name}'")
 print(f"REPO_VERSION = '{repo_version}'")
 print(f"BUMP_TYPE    = '{bump_type}'")
+print(f"All env vars containing REPO:")
+for k, v in os.environ.items():
+    if 'REPO' in k.upper() or 'VER' in k.upper() or 'BUMP' in k.upper():
+        print(f"  {k} = {v}")
 print(f"==========================================")
 
 if not repo_name:
