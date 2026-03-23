@@ -1,14 +1,13 @@
 pipeline {
     agent any
     parameters {
-        string(name: 'REPO_NAME',      defaultValue: 'ver1',  description: 'Triggering repo — do not change when deploying')
-        string(name: 'REPO_VERSION',   defaultValue: '1.0.0', description: 'New version — do not change when deploying')
+        string(name: 'REPO_NAME',      defaultValue: 'ver1',  description: 'Triggering repo')
+        string(name: 'REPO_VERSION',   defaultValue: '1.0.0', description: 'New version')
         string(name: 'BUMP_TYPE',      defaultValue: 'patch', description: 'Bump type')
-        string(name: 'DEPLOY_VERSION', defaultValue: '',      description: 'Fill to deploy specific version e.g. 1.0.15 — leave blank for version bump only')
+        string(name: 'DEPLOY_VERSION', defaultValue: '',      description: 'Fill to deploy e.g. 1.0.15 — leave blank for version bump')
     }
     environment {
         GIT_REPO_URL = 'https://github.com/Rohitsss-lab/vertotal.git'
-        IS_DEPLOY    = "${params.DEPLOY_VERSION?.trim() ? 'true' : 'false'}"
     }
     stages {
         stage('Clean Workspace') {
@@ -18,11 +17,11 @@ pipeline {
         }
 
         // ══════════════════════════════════════════
-        // DEPLOY MODE — only runs when DEPLOY_VERSION is filled
+        // DEPLOY MODE
         // ══════════════════════════════════════════
         stage('Checkout Tag for Deploy') {
             when {
-                environment name: 'IS_DEPLOY', value: 'true'
+                expression { return params.DEPLOY_VERSION != null && params.DEPLOY_VERSION.trim() != '' }
             }
             steps {
                 checkout([
@@ -38,7 +37,7 @@ pipeline {
         }
         stage('Read Deploy Versions') {
             when {
-                environment name: 'IS_DEPLOY', value: 'true'
+                expression { return params.DEPLOY_VERSION != null && params.DEPLOY_VERSION.trim() != '' }
             }
             steps {
                 withEnv(["DEPLOY_VERSION=${params.DEPLOY_VERSION}"]) {
@@ -52,15 +51,13 @@ pipeline {
                 echo "DEPLOY MODE — vertotal v${params.DEPLOY_VERSION}"
                 echo "ver1 will deploy : ${env.DEPLOY_VER1}"
                 echo "ver2 will deploy : ${env.DEPLOY_VER2}"
-                echo "NO version bump"
-                echo "NO commit"
-                echo "NO new tag"
+                echo "NO version bump — NO commit — NO tag"
                 echo "==========================================="
             }
         }
         stage('Deploy ver1') {
             when {
-                environment name: 'IS_DEPLOY', value: 'true'
+                expression { return params.DEPLOY_VERSION != null && params.DEPLOY_VERSION.trim() != '' }
             }
             steps {
                 echo "Deploying ver1 at version ${env.DEPLOY_VER1}"
@@ -75,7 +72,7 @@ pipeline {
         }
         stage('Deploy ver2') {
             when {
-                environment name: 'IS_DEPLOY', value: 'true'
+                expression { return params.DEPLOY_VERSION != null && params.DEPLOY_VERSION.trim() != '' }
             }
             steps {
                 echo "Deploying ver2 at version ${env.DEPLOY_VER2}"
@@ -90,12 +87,11 @@ pipeline {
         }
 
         // ══════════════════════════════════════════
-        // VERSION BUMP MODE — only runs when DEPLOY_VERSION is empty
-        // triggered automatically by ver1 or ver2
+        // VERSION BUMP MODE
         // ══════════════════════════════════════════
         stage('Checkout Main for Bump') {
             when {
-                environment name: 'IS_DEPLOY', value: 'false'
+                expression { return params.DEPLOY_VERSION == null || params.DEPLOY_VERSION.trim() == '' }
             }
             steps {
                 checkout([
@@ -110,7 +106,7 @@ pipeline {
         }
         stage('Process Versions') {
             when {
-                environment name: 'IS_DEPLOY', value: 'false'
+                expression { return params.DEPLOY_VERSION == null || params.DEPLOY_VERSION.trim() == '' }
             }
             steps {
                 withEnv([
@@ -124,7 +120,7 @@ pipeline {
         }
         stage('Read Results') {
             when {
-                environment name: 'IS_DEPLOY', value: 'false'
+                expression { return params.DEPLOY_VERSION == null || params.DEPLOY_VERSION.trim() == '' }
             }
             steps {
                 script {
@@ -145,7 +141,7 @@ pipeline {
         }
         stage('Commit and Tag') {
             when {
-                environment name: 'IS_DEPLOY', value: 'false'
+                expression { return params.DEPLOY_VERSION == null || params.DEPLOY_VERSION.trim() == '' }
             }
             steps {
                 withCredentials([usernamePassword(
@@ -164,8 +160,8 @@ pipeline {
                         git checkout main
                         git merge release/v%NEW_UMBRELLA_VERSION%
                         git push origin main
-                        git tag %NEW_TAG%
-                        git push origin %NEW_TAG%
+                        git tag %NEW_TAG% || echo "Tag already exists skipping"
+                        git push origin %NEW_TAG% || echo "Tag already pushed skipping"
                     '''
                 }
             }
@@ -174,8 +170,8 @@ pipeline {
     post {
         success {
             script {
-                if (params.DEPLOY_VERSION?.trim()) {
-                    echo "DEPLOY SUCCESS — vertotal v${params.DEPLOY_VERSION} deployed successfully"
+                if (params.DEPLOY_VERSION != null && params.DEPLOY_VERSION.trim() != '') {
+                    echo "DEPLOY SUCCESS — vertotal v${params.DEPLOY_VERSION} deployed"
                     echo "ver1 v${env.DEPLOY_VER1} is running"
                     echo "ver2 v${env.DEPLOY_VER2} is running"
                 } else {
