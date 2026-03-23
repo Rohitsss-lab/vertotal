@@ -1,10 +1,10 @@
 pipeline {
     agent any
     parameters {
-        string(name: 'REPO_NAME',      defaultValue: 'ver1', description: 'Triggering repo — do not change when deploying')
-        string(name: 'REPO_VERSION',   defaultValue: '1.0.0', description: 'New version — do not change when deploying')
+        string(name: 'REPO_NAME',      defaultValue: 'ver1',  description: 'Triggering repo')
+        string(name: 'REPO_VERSION',   defaultValue: '1.0.0', description: 'New version')
         string(name: 'BUMP_TYPE',      defaultValue: 'patch', description: 'Bump type')
-        string(name: 'DEPLOY_VERSION', defaultValue: '', description: 'Fill this to deploy a specific version e.g. 1.0.8 — leave blank for normal version bump')
+        string(name: 'DEPLOY_VERSION', defaultValue: '',      description: 'Fill to deploy specific version e.g. 1.0.15 — leave blank for version bump only')
     }
     environment {
         GIT_REPO_URL = 'https://github.com/Rohitsss-lab/vertotal.git'
@@ -16,12 +16,10 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────
-        // DEPLOY MODE — triggered manually with DEPLOY_VERSION
-        // ─────────────────────────────────────────
+        // ── DEPLOY MODE ──────────────────────────────
         stage('Checkout Tag for Deploy') {
             when {
-                expression { return params.DEPLOY_VERSION?.trim() }
+                expression { return params.DEPLOY_VERSION?.trim() as Boolean }
             }
             steps {
                 checkout([
@@ -37,7 +35,7 @@ pipeline {
         }
         stage('Read Deploy Versions') {
             when {
-                expression { return params.DEPLOY_VERSION?.trim() }
+                expression { return params.DEPLOY_VERSION?.trim() as Boolean }
             }
             steps {
                 withEnv(["DEPLOY_VERSION=${params.DEPLOY_VERSION}"]) {
@@ -49,15 +47,15 @@ pipeline {
                 }
                 echo "==========================================="
                 echo "DEPLOY MODE — vertotal v${params.DEPLOY_VERSION}"
-                echo "ver1 will deploy at : ${env.DEPLOY_VER1}"
-                echo "ver2 will deploy at : ${env.DEPLOY_VER2}"
-                echo "NO version bump will happen"
+                echo "ver1 will deploy : ${env.DEPLOY_VER1}"
+                echo "ver2 will deploy : ${env.DEPLOY_VER2}"
+                echo "NO version bump — NO commit — NO tag"
                 echo "==========================================="
             }
         }
         stage('Deploy ver1') {
             when {
-                expression { return params.DEPLOY_VERSION?.trim() }
+                expression { return params.DEPLOY_VERSION?.trim() as Boolean }
             }
             steps {
                 echo "Deploying ver1 at version ${env.DEPLOY_VER1}"
@@ -71,7 +69,7 @@ pipeline {
         }
         stage('Deploy ver2') {
             when {
-                expression { return params.DEPLOY_VERSION?.trim() }
+                expression { return params.DEPLOY_VERSION?.trim() as Boolean }
             }
             steps {
                 echo "Deploying ver2 at version ${env.DEPLOY_VER2}"
@@ -84,12 +82,10 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────
-        // VERSION BUMP MODE — triggered by ver1 or ver2
-        // ─────────────────────────────────────────
+        // ── VERSION BUMP MODE ─────────────────────────
         stage('Checkout Main for Bump') {
             when {
-                expression { return !params.DEPLOY_VERSION?.trim() }
+                expression { return !params.DEPLOY_VERSION?.trim() as Boolean }
             }
             steps {
                 checkout([
@@ -104,7 +100,7 @@ pipeline {
         }
         stage('Process Versions') {
             when {
-                expression { return !params.DEPLOY_VERSION?.trim() }
+                expression { return !params.DEPLOY_VERSION?.trim() as Boolean }
             }
             steps {
                 withEnv([
@@ -118,7 +114,7 @@ pipeline {
         }
         stage('Read Results') {
             when {
-                expression { return !params.DEPLOY_VERSION?.trim() }
+                expression { return !params.DEPLOY_VERSION?.trim() as Boolean }
             }
             steps {
                 script {
@@ -134,12 +130,11 @@ pipeline {
                 echo "ver2     : ${env.VER2_VERSION}"
                 echo "Tag      : ${env.NEW_TAG}"
                 echo "==========================================="
-                bat 'type versions.json'
             }
         }
         stage('Commit and Tag') {
             when {
-                expression { return !params.DEPLOY_VERSION?.trim() }
+                expression { return !params.DEPLOY_VERSION?.trim() as Boolean }
             }
             steps {
                 withCredentials([usernamePassword(
