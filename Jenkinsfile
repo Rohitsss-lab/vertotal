@@ -1,11 +1,11 @@
 pipeline {
     agent any
-    parameters {
-        string(name: 'REPO_NAME',      defaultValue: 'ver1',  description: 'Triggering repo')
-        string(name: 'REPO_VERSION',   defaultValue: '1.0.0', description: 'New version')
-        string(name: 'BUMP_TYPE',      defaultValue: 'patch', description: 'Bump type')
-        string(name: 'DEPLOY_VERSION', defaultValue: '',      description: 'Fill to deploy e.g. 1.0.15 — leave blank for version bump')
-    }
+parameters {
+    string(name: 'REPO_NAME',      defaultValue: '',      description: 'Triggering repo')
+    string(name: 'REPO_VERSION',   defaultValue: '',      description: 'New version')
+    string(name: 'BUMP_TYPE',      defaultValue: 'patch', description: 'Bump type')
+    string(name: 'DEPLOY_VERSION', defaultValue: '',      description: 'Fill to deploy e.g. 1.0.15')
+}
     environment {
         GIT_REPO_URL = 'https://github.com/Rohitsss-lab/vertotal.git'
     }
