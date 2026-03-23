@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 def bump(version, bump_type):
     parts = version.split(".")
@@ -12,18 +13,43 @@ def bump(version, bump_type):
         patch += 1
     return f"{major}.{minor}.{patch}"
 
-repo_name    = os.environ.get("REPO_NAME", "ver1")
-repo_version = os.environ.get("REPO_VERSION", "1.0.0")
+repo_name    = os.environ.get("REPO_NAME", "")
+repo_version = os.environ.get("REPO_VERSION", "")
 bump_type    = os.environ.get("BUMP_TYPE", "patch")
+
+print(f"==========================================")
+print(f"REPO_NAME    = '{repo_name}'")
+print(f"REPO_VERSION = '{repo_version}'")
+print(f"BUMP_TYPE    = '{bump_type}'")
+print(f"==========================================")
+
+# Safety check — never allow empty repo_name or repo_version
+if not repo_name:
+    print("ERROR: REPO_NAME is empty — aborting to protect versions")
+    sys.exit(1)
+
+if not repo_version:
+    print("ERROR: REPO_VERSION is empty — aborting to protect versions")
+    sys.exit(1)
+
+if repo_version == "1.0.0":
+    print("WARNING: REPO_VERSION is 1.0.0 — this looks wrong, aborting to protect versions")
+    sys.exit(1)
 
 with open("versions.json", "r") as f:
     data = json.load(f)
 
+print(f"versions.json BEFORE: {data}")
+
+# Only update the repo version — never reset it
 data[repo_name] = repo_version
 
+# Bump umbrella version
 old_umbrella = data["umbrella"]
 new_umbrella = bump(old_umbrella, bump_type)
 data["umbrella"] = new_umbrella
+
+print(f"versions.json AFTER:  {data}")
 
 with open("versions.json", "w") as f:
     json.dump(data, f, indent=2)
