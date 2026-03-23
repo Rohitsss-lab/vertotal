@@ -13,29 +13,30 @@ def bump(version, bump_type):
         patch += 1
     return f"{major}.{minor}.{patch}"
 
-# Try multiple ways to get the values
-repo_name    = (os.environ.get("REPO_NAME")    or 
-                os.environ.get("repo_name")    or "").strip()
-repo_version = (os.environ.get("REPO_VERSION") or 
-                os.environ.get("repo_version") or "").strip()
-bump_type    = (os.environ.get("BUMP_TYPE")    or 
-                os.environ.get("bump_type")    or "patch").strip()
+# Read from PARAMS.txt file instead of environment variables
+params = {}
+with open("PARAMS.txt", "r", encoding="utf-8") as f:
+    for line in f:
+        line = line.strip()
+        if '=' in line:
+            key, value = line.split('=', 1)
+            params[key.strip()] = value.strip()
+
+repo_name    = params.get("REPO_NAME", "").strip()
+repo_version = params.get("REPO_VERSION", "").strip()
+bump_type    = params.get("BUMP_TYPE", "patch").strip()
 
 print(f"==========================================")
 print(f"REPO_NAME    = '{repo_name}'")
 print(f"REPO_VERSION = '{repo_version}'")
 print(f"BUMP_TYPE    = '{bump_type}'")
-print(f"All env vars containing REPO:")
-for k, v in os.environ.items():
-    if 'REPO' in k.upper() or 'VER' in k.upper() or 'BUMP' in k.upper():
-        print(f"  {k} = {v}")
 print(f"==========================================")
 
-if not repo_name:
+if not repo_name or repo_name == 'EMPTY':
     print("ERROR: REPO_NAME is empty")
     sys.exit(1)
 
-if not repo_version:
+if not repo_version or repo_version == 'EMPTY':
     print("ERROR: REPO_VERSION is empty")
     sys.exit(1)
 
