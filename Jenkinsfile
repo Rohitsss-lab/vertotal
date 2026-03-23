@@ -1,13 +1,14 @@
 pipeline {
     agent any
     parameters {
-        string(name: 'REPO_NAME',      defaultValue: 'ver1',  description: 'Triggering repo')
-        string(name: 'REPO_VERSION',   defaultValue: '1.0.0', description: 'New version')
+        string(name: 'REPO_NAME',      defaultValue: 'ver1',  description: 'Triggering repo — do not change when deploying')
+        string(name: 'REPO_VERSION',   defaultValue: '1.0.0', description: 'New version — do not change when deploying')
         string(name: 'BUMP_TYPE',      defaultValue: 'patch', description: 'Bump type')
         string(name: 'DEPLOY_VERSION', defaultValue: '',      description: 'Fill to deploy specific version e.g. 1.0.15 — leave blank for version bump only')
     }
     environment {
         GIT_REPO_URL = 'https://github.com/Rohitsss-lab/vertotal.git'
+        IS_DEPLOY    = "${params.DEPLOY_VERSION?.trim() ? 'true' : 'false'}"
     }
     stages {
         stage('Clean Workspace') {
@@ -16,10 +17,12 @@ pipeline {
             }
         }
 
-        // ── DEPLOY MODE ──────────────────────────────
+        // ══════════════════════════════════════════
+        // DEPLOY MODE — only runs when DEPLOY_VERSION is filled
+        // ══════════════════════════════════════════
         stage('Checkout Tag for Deploy') {
             when {
-                expression { return params.DEPLOY_VERSION?.trim() as Boolean }
+                environment name: 'IS_DEPLOY', value: 'true'
             }
             steps {
                 checkout([
@@ -35,7 +38,7 @@ pipeline {
         }
         stage('Read Deploy Versions') {
             when {
-                expression { return params.DEPLOY_VERSION?.trim() as Boolean }
+                environment name: 'IS_DEPLOY', value: 'true'
             }
             steps {
                 withEnv(["DEPLOY_VERSION=${params.DEPLOY_VERSION}"]) {
@@ -49,43 +52,50 @@ pipeline {
                 echo "DEPLOY MODE — vertotal v${params.DEPLOY_VERSION}"
                 echo "ver1 will deploy : ${env.DEPLOY_VER1}"
                 echo "ver2 will deploy : ${env.DEPLOY_VER2}"
-                echo "NO version bump — NO commit — NO tag"
+                echo "NO version bump"
+                echo "NO commit"
+                echo "NO new tag"
                 echo "==========================================="
             }
         }
         stage('Deploy ver1') {
             when {
-                expression { return params.DEPLOY_VERSION?.trim() as Boolean }
+                environment name: 'IS_DEPLOY', value: 'true'
             }
             steps {
                 echo "Deploying ver1 at version ${env.DEPLOY_VER1}"
                 build job: 'ver1',
                       wait: true,
                       parameters: [
-                          string(name: 'DEPLOY_TAG', value: env.DEPLOY_VER1)
+                          string(name: 'DEPLOY_TAG',          value: env.DEPLOY_VER1),
+                          string(name: 'TRIGGERED_BY_DEPLOY', value: 'true')
                       ]
                 echo "ver1 v${env.DEPLOY_VER1} deployed successfully"
             }
         }
         stage('Deploy ver2') {
             when {
-                expression { return params.DEPLOY_VERSION?.trim() as Boolean }
+                environment name: 'IS_DEPLOY', value: 'true'
             }
             steps {
                 echo "Deploying ver2 at version ${env.DEPLOY_VER2}"
                 build job: 'ver2',
                       wait: true,
                       parameters: [
-                          string(name: 'DEPLOY_TAG', value: env.DEPLOY_VER2)
+                          string(name: 'DEPLOY_TAG',          value: env.DEPLOY_VER2),
+                          string(name: 'TRIGGERED_BY_DEPLOY', value: 'true')
                       ]
                 echo "ver2 v${env.DEPLOY_VER2} deployed successfully"
             }
         }
 
-        // ── VERSION BUMP MODE ─────────────────────────
+        // ══════════════════════════════════════════
+        // VERSION BUMP MODE — only runs when DEPLOY_VERSION is empty
+        // triggered automatically by ver1 or ver2
+        // ══════════════════════════════════════════
         stage('Checkout Main for Bump') {
             when {
-                expression { return !params.DEPLOY_VERSION?.trim() as Boolean }
+                environment name: 'IS_DEPLOY', value: 'false'
             }
             steps {
                 checkout([
@@ -100,7 +110,7 @@ pipeline {
         }
         stage('Process Versions') {
             when {
-                expression { return !params.DEPLOY_VERSION?.trim() as Boolean }
+                environment name: 'IS_DEPLOY', value: 'false'
             }
             steps {
                 withEnv([
@@ -114,7 +124,7 @@ pipeline {
         }
         stage('Read Results') {
             when {
-                expression { return !params.DEPLOY_VERSION?.trim() as Boolean }
+                environment name: 'IS_DEPLOY', value: 'false'
             }
             steps {
                 script {
@@ -130,11 +140,12 @@ pipeline {
                 echo "ver2     : ${env.VER2_VERSION}"
                 echo "Tag      : ${env.NEW_TAG}"
                 echo "==========================================="
+                bat 'type versions.json'
             }
         }
         stage('Commit and Tag') {
             when {
-                expression { return !params.DEPLOY_VERSION?.trim() as Boolean }
+                environment name: 'IS_DEPLOY', value: 'false'
             }
             steps {
                 withCredentials([usernamePassword(
@@ -164,7 +175,9 @@ pipeline {
         success {
             script {
                 if (params.DEPLOY_VERSION?.trim()) {
-                    echo "DEPLOY SUCCESS — vertotal v${params.DEPLOY_VERSION} deployed"
+                    echo "DEPLOY SUCCESS — vertotal v${params.DEPLOY_VERSION} deployed successfully"
+                    echo "ver1 v${env.DEPLOY_VER1} is running"
+                    echo "ver2 v${env.DEPLOY_VER2} is running"
                 } else {
                     echo "VERSION BUMP SUCCESS — tag ${env.NEW_TAG} created"
                 }
