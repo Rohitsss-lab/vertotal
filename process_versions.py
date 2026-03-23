@@ -12,7 +12,7 @@ def bump(version, bump_type):
         patch += 1
     return f"{major}.{minor}.{patch}"
 
-repo_name    = os.environ.get("REPO_NAME", "ver")
+repo_name    = os.environ.get("REPO_NAME", "ver1")
 repo_version = os.environ.get("REPO_VERSION", "1.0.0")
 bump_type    = os.environ.get("BUMP_TYPE", "patch")
 
@@ -34,11 +34,11 @@ with open("NEW_UMBRELLA_VERSION.txt", "w") as f:
 with open("NEW_TAG.txt", "w") as f:
     f.write(f"v{new_umbrella}")
 
-with open("REPO1_VERSION.txt", "w") as f:
-    f.write(data["repo1"])
+with open("VER1_VERSION.txt", "w") as f:
+    f.write(data["ver1"])
 
-with open("REPO2_VERSION.txt", "w") as f:
-    f.write(data["repo2"])
+with open("VER2_VERSION.txt", "w") as f:
+    f.write(data["ver2"])
 
 print(f"Umbrella: {old_umbrella} -> {new_umbrella}")
 print(f"Updated {repo_name} to {repo_version}")
