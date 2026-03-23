@@ -76,7 +76,7 @@ parameters {
             }
             steps {
                 echo "Deploying ver2 at version ${env.DEPLOY_VER2}"
-                build job: 'ver2',
+                build job: 'ver1.2',
                       wait: true,
                       parameters: [
                           string(name: 'DEPLOY_TAG',          value: env.DEPLOY_VER2),
