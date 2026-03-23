@@ -104,20 +104,32 @@ parameters {
                 ])
             }
         }
-        stage('Process Versions') {
-            when {
-                expression { return params.DEPLOY_VERSION == null || params.DEPLOY_VERSION.trim() == '' }
-            }
-            steps {
-                withEnv([
-                    "REPO_NAME=${params.REPO_NAME}",
-                    "REPO_VERSION=${params.REPO_VERSION}",
-                    "BUMP_TYPE=${params.BUMP_TYPE}"
-                ]) {
-                    bat '"C:\\Program Files\\Python313\\python.exe" process_versions.py'
-                }
+       stage('Process Versions') {
+    when {
+        expression { return params.DEPLOY_VERSION == null || params.DEPLOY_VERSION.trim() == '' }
+    }
+    steps {
+        script {
+            // Write params to a temp file — bypass withEnv completely
+            def repoName    = params.REPO_NAME    ?: ''
+            def repoVersion = params.REPO_VERSION ?: ''
+            def bumpType    = params.BUMP_TYPE    ?: 'patch'
+            
+            echo "Passing to Python:"
+            echo "REPO_NAME    = ${repoName}"
+            echo "REPO_VERSION = ${repoVersion}"
+            echo "BUMP_TYPE    = ${bumpType}"
+            
+            withEnv([
+                "REPO_NAME=${repoName}",
+                "REPO_VERSION=${repoVersion}",
+                "BUMP_TYPE=${bumpType}"
+            ]) {
+                bat '"C:\\Program Files\\Python313\\python.exe" process_versions.py'
             }
         }
+    }
+}
         stage('Read Results') {
             when {
                 expression { return params.DEPLOY_VERSION == null || params.DEPLOY_VERSION.trim() == '' }
