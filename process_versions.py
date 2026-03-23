@@ -13,7 +13,6 @@ def bump(version, bump_type):
         patch += 1
     return f"{major}.{minor}.{patch}"
 
-# Clean all incoming values
 repo_name    = os.environ.get("REPO_NAME", "").strip()
 repo_version = os.environ.get("REPO_VERSION", "").strip()
 bump_type    = os.environ.get("BUMP_TYPE", "patch").strip()
