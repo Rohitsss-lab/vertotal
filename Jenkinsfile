@@ -59,7 +59,7 @@ pipeline {
             }
             steps {
                 echo "Deploying ver1 at version ${env.DEPLOY_VER1}"
-                build job: 'ver1-pipeline',
+                build job: 'ver1',
                       wait: true,
                       parameters: [
                           string(name: 'DEPLOY_TAG', value: env.DEPLOY_VER1)
@@ -73,7 +73,7 @@ pipeline {
             }
             steps {
                 echo "Deploying ver2 at version ${env.DEPLOY_VER2}"
-                build job: 'ver2-pipeline',
+                build job: 'ver2',
                       wait: true,
                       parameters: [
                           string(name: 'DEPLOY_TAG', value: env.DEPLOY_VER2)
