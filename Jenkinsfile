@@ -36,25 +36,27 @@ parameters {
             }
         }
         stage('Read Deploy Versions') {
-            when {
-                expression { return params.DEPLOY_VERSION != null && params.DEPLOY_VERSION.trim() != '' }
-            }
-            steps {
-                withEnv(["DEPLOY_VERSION=${params.DEPLOY_VERSION}"]) {
-                    bat '"C:\\Program Files\\Python313\\python.exe" deploy.py'
-                }
-                script {
-                    env.DEPLOY_VER1 = readFile('DEPLOY_VER1_VERSION.txt').trim()
-                    env.DEPLOY_VER2 = readFile('DEPLOY_VER2_VERSION.txt').trim()
-                }
-                echo "==========================================="
-                echo "DEPLOY MODE — vertotal v${params.DEPLOY_VERSION}"
-                echo "ver1 will deploy : ${env.DEPLOY_VER1}"
-                echo "ver2 will deploy : ${env.DEPLOY_VER2}"
-                echo "NO version bump — NO commit — NO tag"
-                echo "==========================================="
-            }
+    when {
+        expression { return params.DEPLOY_VERSION != null && params.DEPLOY_VERSION.trim() != '' }
+    }
+    steps {
+        withEnv(["DEPLOY_VERSION=${params.DEPLOY_VERSION}"]) {
+            bat '"C:\\Program Files\\Python313\\python.exe" deploy.py'
         }
+        script {
+            env.DEPLOY_VER1 = readFile('DEPLOY_VER1_VERSION.txt').trim()
+                                .replaceAll('[^0-9.]', '')
+            env.DEPLOY_VER2 = readFile('DEPLOY_VER2_VERSION.txt').trim()
+                                .replaceAll('[^0-9.]', '')
+        }
+        echo "==========================================="
+        echo "DEPLOY MODE — vertotal v${params.DEPLOY_VERSION}"
+        echo "ver1 will deploy : ${env.DEPLOY_VER1}"
+        echo "ver2 will deploy : ${env.DEPLOY_VER2}"
+        echo "NO version bump — NO commit — NO tag"
+        echo "==========================================="
+    }
+}
         stage('Deploy ver1') {
             when {
                 expression { return params.DEPLOY_VERSION != null && params.DEPLOY_VERSION.trim() != '' }
