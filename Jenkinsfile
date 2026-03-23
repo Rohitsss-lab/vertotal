@@ -40,21 +40,46 @@ parameters {
         expression { return params.DEPLOY_VERSION != null && params.DEPLOY_VERSION.trim() != '' }
     }
     steps {
-        withEnv(["DEPLOY_VERSION=${params.DEPLOY_VERSION}"]) {
-            bat '"C:\\Program Files\\Python313\\python.exe" deploy.py'
-        }
         script {
+            // Read versions.json directly in Groovy — no Python needed
+            def versionsText = readFile('versions.json')
+            echo "versions.json content: ${versionsText}"
+
+            // Write to a temp file for Python to parse
+            writeFile file: 'PARSE_VERSIONS.py', text: """
+import json
+
+with open("versions.json", "r") as f:
+    data = json.load(f)
+
+ver1 = data.get("ver1", "").strip()
+ver2 = data.get("ver2", "").strip()
+
+print(f"ver1={ver1}")
+print(f"ver2={ver2}")
+
+with open("DEPLOY_VER1_VERSION.txt", "w", newline='') as f:
+    f.write(ver1)
+
+with open("DEPLOY_VER2_VERSION.txt", "w", newline='') as f:
+    f.write(ver2)
+
+print(f"Ready to deploy ver1={ver1} ver2={ver2}")
+"""
+            bat '"C:\\Program Files\\Python313\\python.exe" PARSE_VERSIONS.py'
+
             env.DEPLOY_VER1 = readFile('DEPLOY_VER1_VERSION.txt').trim()
                                 .replaceAll('[^0-9.]', '')
             env.DEPLOY_VER2 = readFile('DEPLOY_VER2_VERSION.txt').trim()
                                 .replaceAll('[^0-9.]', '')
+
+            echo "==========================================="
+            echo "DEPLOY MODE — vertotal v${params.DEPLOY_VERSION}"
+            echo "ver1 will deploy : ${env.DEPLOY_VER1}"
+            echo "ver2 will deploy : ${env.DEPLOY_VER2}"
+            echo "NO version bump — NO commit — NO tag"
+            echo "==========================================="
         }
-        echo "==========================================="
-        echo "DEPLOY MODE — vertotal v${params.DEPLOY_VERSION}"
-        echo "ver1 will deploy : ${env.DEPLOY_VER1}"
-        echo "ver2 will deploy : ${env.DEPLOY_VER2}"
-        echo "NO version bump — NO commit — NO tag"
-        echo "==========================================="
     }
 }
         stage('Deploy ver1') {
